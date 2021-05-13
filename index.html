@@ -1,0 +1,145 @@
+<link rel="stylesheet" href="style.css">
+<canvas id="myCanvas" width="650" height="400"></canvas>
+<script>
+    var canvas = document.getElementById("myCanvas");
+var ctx = canvas.getContext("2d");
+var ballRadius = 10;
+var xBall = canvas.width/2;//исходная позиция мяча
+var yBall = canvas.height-30;
+var xBallShift = 3;//смещение мяча
+var yBallShift = -3;
+var racketHeight = 10;
+var racketWidth = 75;
+var racketX = (canvas.width-racketWidth)/2;
+var brickRowCount = 7;
+var brickColumnCount = 4;
+var brickWidth = 75;
+var brickHeight = 20;
+var brickPadding = 10;
+var brickOffsetTop = 30;
+var brickOffsetLeft = 30;
+var score = 0;
+var lives = 3;
+var statusBot = 1;
+
+var bricks = [];
+for(var c=0; c<brickColumnCount; c++) {
+  bricks[c] = [];
+  for(var r=0; r<brickRowCount; r++) {
+    bricks[c][r] = { x: 0, y: 0, status: 1 };
+  }
+}
+
+document.addEventListener("mousemove", mouseMoveHandler, false);
+
+function mouseMoveHandler(e) {
+  var relativeX = e.clientX - canvas.offsetLeft;
+  if(relativeX > 0 && relativeX < canvas.width) {
+    racketX = relativeX - racketWidth/2;
+  }
+}
+
+function botCheckout(){
+  statusBot = -statusBot;
+}
+
+function collisionDetection() {//проверка на соприкосновение с "бриками"
+  for(var c=0; c<brickColumnCount; c++) {
+    for(var r=0; r<brickRowCount; r++) {
+      var b = bricks[c][r];
+      if(b.status == 1) {
+        if(xBall > b.x && xBall < b.x+brickWidth && yBall > b.y && yBall < b.y+brickHeight) {
+          yBallShift = -yBallShift;
+          b.status = 0;
+          score++;
+          if(score == brickRowCount*brickColumnCount) {
+            alert("Победа");
+            document.location.reload();
+          }
+        }
+      }
+    }
+  }
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  //рисуем кирпичи
+  for(var c=0; c<brickColumnCount; c++) {
+    for(var r=0; r<brickRowCount; r++) {
+      if(bricks[c][r].status == 1) {
+        var brickX = (r*(brickWidth+brickPadding))+brickOffsetLeft;
+        var brickY = (c*(brickHeight+brickPadding))+brickOffsetTop;
+        bricks[c][r].x = brickX;
+        bricks[c][r].y = brickY;
+        ctx.beginPath();
+        ctx.rect(brickX, brickY, brickWidth, brickHeight);
+        ctx.fillStyle = "#A2EF00";
+        ctx.fill();
+        ctx.closePath();
+      }
+    }
+  }
+
+  //мяч
+  ctx.beginPath();
+  ctx.arc(xBall, yBall, ballRadius, 0, Math.PI*2);
+  ctx.fillStyle = "#CB0077";
+  ctx.fill();
+  ctx.closePath();
+
+  //ракетка
+  ctx.beginPath();
+  if (statusBot == 1){
+    racketX = xBall - racketWidth/2;
+    ctx.rect(racketX, canvas.height-racketHeight, racketWidth, racketHeight);
+  }
+  else 
+    ctx.rect(racketX, canvas.height-racketHeight, racketWidth, racketHeight);
+  
+  ctx.fillStyle = "#A2EF00";
+  ctx.fill();
+  ctx.closePath();
+
+  //жизни
+  ctx.font = "16px Arial";
+  ctx.fillStyle = "#CB0077";
+  ctx.fillText("Осталось попыток: "+lives, 8, canvas.height-10);
+  collisionDetection();
+
+  if(xBall + xBallShift > canvas.width-ballRadius || xBall + xBallShift < ballRadius) {//отскок от правой/левой стены
+    xBallShift = -xBallShift;
+  }
+  if(yBall + yBallShift < ballRadius) {//отскок от потолка
+    yBallShift = -yBallShift;
+  }
+  else if(yBall + yBallShift > canvas.height-ballRadius) {
+    if(xBall > racketX && xBall < racketX + racketWidth) {//если попали по ракетке
+      yBallShift = -yBallShift;
+    }
+    else {
+      lives--;
+      if(!lives) {
+        alert("Проигрыш");
+        document.location.reload();
+      }
+      else {
+        xBall = canvas.width/2;
+        yBall = canvas.height-30;
+        xBallShift = 4;
+        yBallShift = -4;
+        racketX = (canvas.width-racketWidth)/2;
+      }
+    }
+  }
+
+  xBall += xBallShift;
+  yBall += yBallShift;
+  requestAnimationFrame(draw);
+}
+
+draw();
+</script>
+
+
+<button type="button" onClick ="botCheckout();" class="button" id="push"> Бот контроллер </button>
